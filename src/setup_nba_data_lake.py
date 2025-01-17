@@ -10,13 +10,18 @@ load_dotenv()
 
 # AWS configurations
 region = "ap-south-1"  # Replace with your preferred AWS region
-bucket_name = "nba-analytics-data-lake"  # Change to a unique S3 bucket name
+bucket_name = "nba001-analytics-data-lake"  # Change to a unique S3 bucket name
 glue_database_name = "glue_nbaa_data_lake"
 athena_output_location = f"s3://{bucket_name}/athena-results/"
 
 # Sportsdata.io configurations (loaded from .env)
 api_key = os.getenv("SPORTS_DATA_API_KEY")  # Get API key from .env
 nba_endpoint = os.getenv("NBA_ENDPOINT")  # Get NBA endpoint from .env
+
+# Validate API key and endpoint
+if not api_key or not nba_endpoint:
+    print("Error: Missing SPORTS_DATA_API_KEY or NBA_ENDPOINT in environment.")
+    exit(1)
 
 # Create AWS clients
 s3_client = boto3.client("s3", region_name=region)
@@ -26,13 +31,10 @@ athena_client = boto3.client("athena", region_name=region)
 def create_s3_bucket():
     """Create an S3 bucket for storing sports data."""
     try:
-        if region == "ap-south-1":
-            s3_client.create_bucket(Bucket=bucket_name)
-        else:
-            s3_client.create_bucket(
-                Bucket=bucket_name,
-                CreateBucketConfiguration={"LocationConstraint": region},
-            )
+        s3_client.create_bucket(
+            Bucket=bucket_name,
+            CreateBucketConfiguration={"LocationConstraint": region}
+        )
         print(f"S3 bucket '{bucket_name}' created successfully.")
     except Exception as e:
         print(f"Error creating S3 bucket: {e}")
@@ -121,10 +123,9 @@ def configure_athena():
     try:
         athena_client.start_query_execution(
             QueryString="CREATE DATABASE IF NOT EXISTS nba_analytics",
-            QueryExecutionContext={"Database": glue_database_name},
-            ResultConfiguration={"OutputLocation": athena_output_location},
+            ResultConfiguration={"OutputLocation": athena_output_location}
         )
-        print("Athena output location configured successfully.")
+        print("Athena database and output location configured successfully.")
     except Exception as e:
         print(f"Error configuring Athena: {e}")
 
